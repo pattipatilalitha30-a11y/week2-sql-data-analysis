@@ -1,0 +1,743 @@
+# E-Commerce Sales Data Analysis - Query Execution Results
+
+> Automated Execution Report generated from `analysis_queries.sql` against the sample database.
+
+---
+
+### Query 1.1: Retrieve all active/completed orders placed after February 1, 2024
+**Concepts:** `SELECT, WHERE, ORDER BY`  
+**Business Question:** *Which completed orders were placed from February 2024 onwards?*  
+
+```sql
+SELECT 
+    order_id,
+    customer_id,
+    order_date,
+    order_status,
+    shipping_fee
+FROM orders
+WHERE order_status = 'Completed' 
+  AND order_date >= '2024-02-01'
+ORDER BY order_date ASC;
+```
+
+**Query Result:**
+
+| order_id | customer_id | order_date | order_status | shipping_fee |
+|----------|-------------|------------|--------------|--------------|
+| 1008     | 7           | 2024-02-02 | Completed    | 0            |
+| 1009     | 8           | 2024-02-05 | Completed    | 10           |
+| 1010     | 9           | 2024-02-10 | Completed    | 15           |
+| 1011     | 2           | 2024-02-14 | Completed    | 0            |
+| 1012     | 10          | 2024-02-18 | Completed    | 20           |
+| 1014     | 12          | 2024-02-27 | Completed    | 0            |
+| 1015     | 3           | 2024-03-02 | Completed    | 10           |
+| 1016     | 13          | 2024-03-06 | Completed    | 15           |
+| 1017     | 14          | 2024-03-10 | Completed    | 0            |
+| 1018     | 15          | 2024-03-14 | Completed    | 20           |
+| 1019     | 16          | 2024-03-18 | Completed    | 10           |
+| 1020     | 4           | 2024-03-22 | Completed    | 15           |
+| 1021     | 1           | 2024-03-28 | Completed    | 0            |
+| 1022     | 17          | 2024-04-03 | Completed    | 10           |
+| 1023     | 18          | 2024-04-07 | Completed    | 15           |
+| 1024     | 7           | 2024-04-12 | Completed    | 0            |
+| 1025     | 19          | 2024-04-16 | Completed    | 20           |
+| 1027     | 2           | 2024-04-25 | Completed    | 15           |
+| 1028     | 21          | 2024-04-29 | Completed    | 10           |
+| 1029     | 6           | 2024-05-03 | Completed    | 0            |
+| 1030     | 22          | 2024-05-08 | Completed    | 15           |
+| 1031     | 8           | 2024-05-12 | Completed    | 10           |
+| 1032     | 23          | 2024-05-16 | Completed    | 0            |
+| 1033     | 10          | 2024-05-20 | Completed    | 20           |
+| 1034     | 12          | 2024-05-25 | Completed    | 15           |
+| 1035     | 1           | 2024-06-01 | Completed    | 0            |
+
+> [!TIP]
+> **Business Insight:** Filtering for completed transactions after a specific milestone provides a baseline
+of fulfilled demand, eliminating noisy cancelled or pending orders.
+
+---
+
+### Query 1.2: Identify the top 5 most expensive catalog products
+**Concepts:** `SELECT, ORDER BY, LIMIT`  
+**Business Question:** *What are our highest-ticket items and their margin potential?*  
+
+```sql
+SELECT 
+    product_id,
+    product_name,
+    category,
+    unit_price,
+    cost_price,
+    ROUND(unit_price - cost_price, 2) AS unit_profit_margin
+FROM products
+ORDER BY unit_price DESC
+LIMIT 5;
+```
+
+**Query Result:**
+
+| product_id | product_name                        | category       | unit_price | cost_price | unit_profit_margin |
+|------------|-------------------------------------|----------------|------------|------------|--------------------|
+| 101        | Pro Laptop 15-inch                  | Electronics    | 1200       | 850        | 350.0              |
+| 104        | 27-inch 4K UHD Monitor              | Electronics    | 350        | 240        | 110.0              |
+| 114        | Adjustable Dumbbells Set (50 lbs)   | Fitness        | 250        | 160        | 90.0               |
+| 108        | Stainless Steel Cookware Set        | Home & Kitchen | 220        | 130        | 90.0               |
+| 102        | Wireless Noise-Canceling Headphones | Electronics    | 180        | 110        | 70.0               |
+
+> [!TIP]
+> **Business Insight:** High-ticket items like laptops ($1200) and 4K monitors ($350) deliver significant gross dollar margins
+($350 and $110 per unit), making them key drivers for promotional bundling.
+
+---
+
+### Query 2.1: Key Performance Indicators (KPIs) - Total Sales, Total Orders, Items Sold, and AOV
+**Concepts:** `SUM, COUNT, AVG, ROUND, Multi-table aggregation`  
+**Business Question:** *What are the high-level revenue and operational KPIs across all fulfilled orders?*  
+
+```sql
+SELECT 
+    COUNT(DISTINCT o.order_id) AS total_completed_orders,
+    SUM(oi.quantity) AS total_units_sold,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_product_revenue,
+    ROUND(SUM(o.shipping_fee), 2) AS total_shipping_revenue,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) + SUM(DISTINCT o.shipping_fee), 2) AS total_gross_sales,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / COUNT(DISTINCT o.order_id), 2) AS average_order_value_aov
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_status IN ('Completed', 'Shipped');
+```
+
+**Query Result:**
+
+| total_completed_orders | total_units_sold | total_product_revenue | total_shipping_revenue | total_gross_sales | average_order_value_aov |
+|------------------------|------------------|-----------------------|------------------------|-------------------|-------------------------|
+| 35                     | 85               | 16292.5               | 665.0                  | 16337.5           | 465.5                   |
+
+> [!TIP]
+> **Business Insight:** The store generates healthy revenue driven by high-value technology items. The Average Order Value (AOV)
+serves as a benchmark; marketing initiatives should focus on cross-selling accessories to raise AOV.
+
+---
+
+### Query 3.1: Revenue and Units Sold by Product Category
+**Concepts:** `GROUP BY, SUM, COUNT, ORDER BY`  
+**Business Question:** *Which product categories generate the most revenue and sales volume?*  
+
+```sql
+SELECT 
+    p.category,
+    COUNT(DISTINCT o.order_id) AS orders_count,
+    SUM(oi.quantity) AS total_units_sold,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS category_revenue,
+    ROUND(AVG(oi.unit_price), 2) AS avg_unit_price
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN orders o ON oi.order_id = o.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY p.category
+ORDER BY category_revenue DESC;
+```
+
+**Query Result:**
+
+| category       | orders_count | total_units_sold | category_revenue | avg_unit_price |
+|----------------|--------------|------------------|------------------|----------------|
+| Electronics    | 16           | 25               | 10715.0          | 471.96         |
+| Home & Kitchen | 9            | 12               | 1979.5           | 170.0          |
+| Fitness        | 8            | 15               | 1635.5           | 126.67         |
+| Clothing       | 12           | 23               | 1497.5           | 74.33          |
+| Books          | 6            | 10               | 465.0            | 47.14          |
+
+> [!TIP]
+> **Business Insight:** Electronics dominates gross revenue due to high unit prices, while Clothing and Books
+drive steady transactional frequency. A balanced inventory strategy ensures continuous cash flow.
+
+---
+
+### Query 3.2: Product-Level Performance (Revenue, Quantity, and Gross Margin)
+**Concepts:** `GROUP BY, SUM, ROUND, Arithmetic Expressions, ORDER BY`  
+**Business Question:** *What are the top revenue-generating individual products and their total profit?*  
+
+```sql
+SELECT 
+    p.product_id,
+    p.product_name,
+    p.category,
+    SUM(oi.quantity) AS total_quantity_sold,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_revenue,
+    ROUND(SUM(oi.quantity * (oi.unit_price * (1 - oi.discount) - p.cost_price)), 2) AS total_gross_profit
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN orders o ON oi.order_id = o.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY p.product_id, p.product_name, p.category
+ORDER BY total_revenue DESC;
+```
+
+**Query Result:**
+
+| product_id | product_name                        | category       | total_quantity_sold | total_revenue | total_gross_profit |
+|------------|-------------------------------------|----------------|---------------------|---------------|--------------------|
+| 101        | Pro Laptop 15-inch                  | Electronics    | 6                   | 6900.0        | 1800.0             |
+| 104        | 27-inch 4K UHD Monitor              | Electronics    | 6                   | 2030.0        | 590.0              |
+| 102        | Wireless Noise-Canceling Headphones | Electronics    | 7                   | 1215.0        | 445.0              |
+| 114        | Adjustable Dumbbells Set (50 lbs)   | Fitness        | 4                   | 950.0         | 310.0              |
+| 108        | Stainless Steel Cookware Set        | Home & Kitchen | 4                   | 847.0         | 327.0              |
+| 109        | Espresso Coffee Machine             | Home & Kitchen | 4                   | 632.0         | 252.0              |
+| 107        | Performance Running Shoes           | Clothing       | 5                   | 594.0         | 269.0              |
+| 103        | Ultra-Slim Mechanical Keyboard      | Electronics    | 6                   | 570.0         | 240.0              |
+| 110        | HEPA Air Purifier                   | Home & Kitchen | 4                   | 500.5         | 180.5              |
+| 105        | Classic Denim Jacket                | Clothing       | 6                   | 488.75        | 248.75             |
+| 115        | Smart Fitness Tracker Watch         | Fitness        | 5                   | 445.5         | 195.5              |
+| 106        | Cotton Crewneck T-Shirt (3-Pack)    | Clothing       | 12                  | 414.75        | 234.75             |
+| 111        | SQL for Data Analysis Handbook      | Books          | 6                   | 270.0         | 162.0              |
+| 113        | High-Density Non-Slip Yoga Mat      | Fitness        | 6                   | 240.0         | 132.0              |
+| 112        | Python Data Science Practical Guide | Books          | 4                   | 195.0         | 115.0              |
+
+> [!TIP]
+> **Business Insight:** The 'Pro Laptop 15-inch' is the flagship product contributing the largest share of both revenue
+and gross profit. Protecting inventory levels for this SKU is critical to avoid stockout revenue loss.
+
+---
+
+### Query 3.3: Monthly Sales Trend
+**Concepts:** `GROUP BY, SUM, COUNT, Date extraction (strftime/substr), ORDER BY`  
+**Business Question:** *How has revenue and order volume evolved month-over-month?*  
+
+```sql
+SELECT 
+    SUBSTR(o.order_date, 1, 7) AS sales_month,
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    SUM(oi.quantity) AS units_sold,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS monthly_revenue
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY SUBSTR(o.order_date, 1, 7)
+ORDER BY sales_month ASC;
+```
+
+**Query Result:**
+
+| sales_month | total_orders | units_sold | monthly_revenue |
+|-------------|--------------|------------|-----------------|
+| 2024-01     | 6            | 14         | 2780.5          |
+| 2024-02     | 6            | 15         | 3668.25         |
+| 2024-03     | 7            | 18         | 2753.75         |
+| 2024-04     | 6            | 13         | 2906.0          |
+| 2024-05     | 6            | 15         | 2870.5          |
+| 2024-06     | 4            | 10         | 1313.5          |
+
+> [!TIP]
+> **Business Insight:** Monthly trend analysis highlights sales trajectory. Consistent volume from Jan through May
+demonstrates stable adoption, while promotional campaigns in specific months spike unit sales.
+
+---
+
+### Query 4.1: Top 10 Customers by Total Spending
+**Concepts:** `Multi-table INNER JOIN, GROUP BY, SUM, ORDER BY, LIMIT`  
+**Business Question:** *Who are our 10 most valuable customers in terms of completed purchases?*  
+
+```sql
+SELECT 
+    c.customer_id,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    c.city,
+    c.state,
+    COUNT(DISTINCT o.order_id) AS total_orders_placed,
+    SUM(oi.quantity) AS total_items_purchased,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_spending
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY c.customer_id, customer_name, c.city, c.state
+ORDER BY total_spending DESC
+LIMIT 10;
+```
+
+**Query Result:**
+
+| customer_id | customer_name   | city          | state | total_orders_placed | total_items_purchased | total_spending |
+|-------------|-----------------|---------------|-------|---------------------|-----------------------|----------------|
+| 10          | Julia Roberts   | San Francisco | CA    | 2                   | 5                     | 2947.5         |
+| 2           | Bob Jones       | Los Angeles   | CA    | 3                   | 8                     | 2169.75        |
+| 1           | Alice Smith     | New York      | NY    | 4                   | 11                    | 2114.75        |
+| 7           | George Clark    | Austin        | TX    | 2                   | 3                     | 1645.0         |
+| 4           | Diana Prince    | Houston       | TX    | 2                   | 3                     | 1449.0         |
+| 3           | Charlie Brown   | Chicago       | IL    | 3                   | 7                     | 1055.0         |
+| 16          | Pam Beesly      | Philadelphia  | PA    | 2                   | 6                     | 640.0          |
+| 6           | Fiona Gallagher | Seattle       | WA    | 2                   | 4                     | 587.5          |
+| 12          | Laura Croft     | San Diego     | CA    | 2                   | 5                     | 523.0          |
+| 8           | Hannah Abbott   | Denver        | CO    | 2                   | 6                     | 410.5          |
+
+> [!TIP]
+> **Business Insight:** The top customers represent a high concentration of total revenue.
+Establishing a VIP loyalty program with personalized offers can improve retention for this cohort.
+
+---
+
+### Query 4.2: Customer-wise Spending Summary (All Customers including non-purchasers)
+**Concepts:** `LEFT JOIN, COALESCE, GROUP BY, ORDER BY`  
+**Business Question:** *What is the purchase activity for every registered customer?*  
+
+```sql
+SELECT 
+    c.customer_id,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    c.email,
+    c.city,
+    COUNT(DISTINCT o.order_id) AS orders_count,
+    COALESCE(ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2), 0.00) AS total_spent
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id AND o.order_status IN ('Completed', 'Shipped')
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+GROUP BY c.customer_id, customer_name, c.email, c.city
+ORDER BY total_spent DESC;
+```
+
+**Query Result:**
+
+| customer_id | customer_name     | email                   | city           | orders_count | total_spent |
+|-------------|-------------------|-------------------------|----------------|--------------|-------------|
+| 10          | Julia Roberts     | julia.r@email.com       | San Francisco  | 2            | 2947.5      |
+| 2           | Bob Jones         | bob.jones@email.com     | Los Angeles    | 3            | 2169.75     |
+| 1           | Alice Smith       | alice.smith@email.com   | New York       | 4            | 2114.75     |
+| 7           | George Clark      | george.clark@email.com  | Austin         | 2            | 1645.0      |
+| 4           | Diana Prince      | diana.prince@email.com  | Houston        | 2            | 1449.0      |
+| 3           | Charlie Brown     | charlie.brown@email.com | Chicago        | 3            | 1055.0      |
+| 16          | Pam Beesly        | pam.b@email.com         | Philadelphia   | 2            | 640.0       |
+| 6           | Fiona Gallagher   | fiona.g@email.com       | Seattle        | 2            | 587.5       |
+| 12          | Laura Croft       | laura.croft@email.com   | San Diego      | 2            | 523.0       |
+| 8           | Hannah Abbott     | hannah.a@email.com      | Denver         | 2            | 410.5       |
+| 14          | Nancy Drew        | nancy.drew@email.com    | Portland       | 2            | 386.0       |
+| 15          | Oscar Martinez    | oscar.m@email.com       | Dallas         | 1            | 343.5       |
+| 23          | Wendy Darling     | wendy.d@email.com       | Minneapolis    | 1            | 340.0       |
+| 9           | Ian Malcolm       | ian.malcolm@email.com   | Boston         | 1            | 337.0       |
+| 19          | Sarah Connor      | sarah.c@email.com       | Las Vegas      | 1            | 315.0       |
+| 18          | Ryan Howard       | ryan.h@email.com        | Detroit        | 1            | 242.0       |
+| 13          | Michael Scott     | michael.scott@email.com | Scranton       | 1            | 223.0       |
+| 17          | Quinn Fabray      | quinn.f@email.com       | Atlanta        | 1            | 215.0       |
+| 21          | Uma Thurman       | uma.t@email.com         | Nashville      | 1            | 199.0       |
+| 22          | Victor Stone      | victor.s@email.com      | Charlotte      | 1            | 150.0       |
+| 5           | Evan Wright       | evan.wright@email.com   | Phoenix        | 0            | 0.0         |
+| 11          | Kevin Bacon       | kevin.bacon@email.com   | Miami          | 0            | 0.0         |
+| 20          | Thomas Anderson   | thomas.a@email.com      | Orlando        | 0            | 0.0         |
+| 24          | Xavier Charles    | xavier.c@email.com      | Salt Lake City | 0            | 0.0         |
+| 25          | Yvonne Strahovski | yvonne.s@email.com      | Raleigh        | 0            | 0.0         |
+
+> [!TIP]
+> **Business Insight:** LEFT JOIN enables the identification of all customer behaviors, from power shoppers
+to zero-spend registrants, preventing exclusion bias.
+
+---
+
+### Query 4.3: Inactive Customers (Registered but Zero Orders)
+**Concepts:** `LEFT JOIN, WHERE ... IS NULL`  
+**Business Question:** *Which customers signed up but never completed any purchase?*  
+
+```sql
+SELECT 
+    c.customer_id,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    c.email,
+    c.city,
+    c.signup_date
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.order_id IS NULL;
+```
+
+**Query Result:**
+
+| customer_id | customer_name     | email              | city           | signup_date |
+|-------------|-------------------|--------------------|----------------|-------------|
+| 24          | Xavier Charles    | xavier.c@email.com | Salt Lake City | 2024-05-10  |
+| 25          | Yvonne Strahovski | yvonne.s@email.com | Raleigh        | 2024-05-15  |
+
+> [!TIP]
+> **Business Insight:** Customers like Xavier Charles and Yvonne Strahovski registered but made no purchases.
+These users are prime targets for a "first-order welcome discount" email re-engagement campaign.
+
+---
+
+### Query 4.4: Complete Order Breakdown (4-Table JOIN)
+**Concepts:** `4-Table INNER JOIN, Computed columns, ORDER BY`  
+**Business Question:** *What are the full itemized details for each order transaction?*  
+
+```sql
+SELECT 
+    o.order_id,
+    o.order_date,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    c.city,
+    p.product_name,
+    p.category,
+    oi.quantity,
+    oi.unit_price,
+    oi.discount,
+    ROUND(oi.quantity * oi.unit_price * (1 - oi.discount), 2) AS line_total,
+    o.order_status
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN products p ON oi.product_id = p.product_id
+ORDER BY o.order_id ASC, oi.item_id ASC
+LIMIT 15;
+```
+
+**Query Result:**
+
+| order_id | order_date | customer_name   | city        | product_name                        | category       | quantity | unit_price | discount | line_total | order_status |
+|----------|------------|-----------------|-------------|-------------------------------------|----------------|----------|------------|----------|------------|--------------|
+| 1001     | 2024-01-05 | Alice Smith     | New York    | Pro Laptop 15-inch                  | Electronics    | 1        | 1200       | 0.05     | 1140.0     | Completed    |
+| 1001     | 2024-01-05 | Alice Smith     | New York    | Ultra-Slim Mechanical Keyboard      | Electronics    | 1        | 95         | 0        | 95.0       | Completed    |
+| 1002     | 2024-01-08 | Bob Jones       | Los Angeles | Wireless Noise-Canceling Headphones | Electronics    | 2        | 180        | 0.1      | 324.0      | Completed    |
+| 1002     | 2024-01-08 | Bob Jones       | Los Angeles | Cotton Crewneck T-Shirt (3-Pack)    | Clothing       | 1        | 35         | 0        | 35.0       | Completed    |
+| 1003     | 2024-01-12 | Charlie Brown   | Chicago     | Classic Denim Jacket                | Clothing       | 1        | 85         | 0        | 85.0       | Completed    |
+| 1003     | 2024-01-12 | Charlie Brown   | Chicago     | SQL for Data Analysis Handbook      | Books          | 2        | 45         | 0        | 90.0       | Completed    |
+| 1004     | 2024-01-15 | Diana Prince    | Houston     | Stainless Steel Cookware Set        | Home & Kitchen | 1        | 220        | 0.05     | 209.0      | Completed    |
+| 1004     | 2024-01-15 | Diana Prince    | Houston     | Espresso Coffee Machine             | Home & Kitchen | 1        | 160        | 0        | 160.0      | Completed    |
+| 1005     | 2024-01-20 | Evan Wright     | Phoenix     | Performance Running Shoes           | Clothing       | 1        | 120        | 0        | 120.0      | Cancelled    |
+| 1006     | 2024-01-25 | Alice Smith     | New York    | 27-inch 4K UHD Monitor              | Electronics    | 1        | 350        | 0.1      | 315.0      | Completed    |
+| 1006     | 2024-01-25 | Alice Smith     | New York    | Python Data Science Practical Guide | Books          | 1        | 50         | 0        | 50.0       | Completed    |
+| 1007     | 2024-01-28 | Fiona Gallagher | Seattle     | Adjustable Dumbbells Set (50 lbs)   | Fitness        | 1        | 250        | 0.05     | 237.5      | Completed    |
+| 1007     | 2024-01-28 | Fiona Gallagher | Seattle     | High-Density Non-Slip Yoga Mat      | Fitness        | 1        | 40         | 0        | 40.0       | Completed    |
+| 1008     | 2024-02-02 | George Clark    | Austin      | Pro Laptop 15-inch                  | Electronics    | 1        | 1200       | 0        | 1200.0     | Completed    |
+| 1009     | 2024-02-05 | Hannah Abbott   | Denver      | Cotton Crewneck T-Shirt (3-Pack)    | Clothing       | 2        | 35         | 0        | 70.0       | Completed    |
+
+> [!TIP]
+> **Business Insight:** Joining customers, orders, line items, and product master files provides an end-to-end
+audit trail for finance, customer support, and fulfillment reconciliation.
+
+---
+
+### Query 5.1: Customers with Total Spending Above Company Average Customer Spending
+**Concepts:** `Scalar Subquery inside HAVING clause, Nested aggregation`  
+**Business Question:** *Which customers have spent more than the average spend across all paying customers?*  
+
+```sql
+SELECT 
+    c.customer_id,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_spending
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY c.customer_id, customer_name
+HAVING SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) > (
+    SELECT AVG(customer_total)
+    FROM (
+        SELECT SUM(oi2.quantity * oi2.unit_price * (1 - oi2.discount)) AS customer_total
+        FROM orders o2
+        JOIN order_items oi2 ON o2.order_id = oi2.order_id
+        WHERE o2.order_status IN ('Completed', 'Shipped')
+        GROUP BY o2.customer_id
+    ) AS customer_spending_subquery
+)
+ORDER BY total_spending DESC;
+```
+
+**Query Result:**
+
+| customer_id | customer_name | total_spending |
+|-------------|---------------|----------------|
+| 10          | Julia Roberts | 2947.5         |
+| 2           | Bob Jones     | 2169.75        |
+| 1           | Alice Smith   | 2114.75        |
+| 7           | George Clark  | 1645.0         |
+| 4           | Diana Prince  | 1449.0         |
+| 3           | Charlie Brown | 1055.0         |
+
+> [!TIP]
+> **Business Insight:** These above-average customers represent the top spending tier. Allocating marketing spend
+to retain these customers provides significantly higher ROI than general customer acquisition.
+
+---
+
+### Query 5.2: Products Priced Higher Than Their Respective Category Average Price
+**Concepts:** `Correlated Subquery in WHERE clause`  
+**Business Question:** *Which individual products carry premium pricing above their category standard?*  
+
+```sql
+SELECT 
+    p1.product_id,
+    p1.product_name,
+    p1.category,
+    p1.unit_price,
+    (
+        SELECT ROUND(AVG(p2.unit_price), 2)
+        FROM products p2
+        WHERE p2.category = p1.category
+    ) AS category_avg_price
+FROM products p1
+WHERE p1.unit_price > (
+    SELECT AVG(p2.unit_price)
+    FROM products p2
+    WHERE p2.category = p1.category
+)
+ORDER BY p1.category, p1.unit_price DESC;
+```
+
+**Query Result:**
+
+| product_id | product_name                        | category       | unit_price | category_avg_price |
+|------------|-------------------------------------|----------------|------------|--------------------|
+| 112        | Python Data Science Practical Guide | Books          | 50         | 47.5               |
+| 107        | Performance Running Shoes           | Clothing       | 120        | 80.0               |
+| 105        | Classic Denim Jacket                | Clothing       | 85         | 80.0               |
+| 101        | Pro Laptop 15-inch                  | Electronics    | 1200       | 456.25             |
+| 114        | Adjustable Dumbbells Set (50 lbs)   | Fitness        | 250        | 126.67             |
+| 108        | Stainless Steel Cookware Set        | Home & Kitchen | 220        | 170.0              |
+
+> [!TIP]
+> **Business Insight:** Identifies premium offerings in each catalog segment (e.g., Adjustable Dumbbells in Fitness,
+Laptop in Electronics). These products have higher margins but may need targeted luxury messaging.
+
+---
+
+### Query 5.3: Orders Containing Electronics Items (Subquery with IN operator)
+**Concepts:** `Subquery with IN clause`  
+**Business Question:** *Which orders included products from the high-margin Electronics category?*  
+
+```sql
+SELECT 
+    order_id,
+    customer_id,
+    order_date,
+    order_status
+FROM orders
+WHERE order_id IN (
+    SELECT DISTINCT oi.order_id
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    WHERE p.category = 'Electronics'
+)
+ORDER BY order_date DESC;
+```
+
+**Query Result:**
+
+| order_id | customer_id | order_date | order_status |
+|----------|-------------|------------|--------------|
+| 1039     | 9           | 2024-06-20 | Pending      |
+| 1037     | 16          | 2024-06-10 | Shipped      |
+| 1036     | 14          | 2024-06-05 | Shipped      |
+| 1035     | 1           | 2024-06-01 | Completed    |
+| 1033     | 10          | 2024-05-20 | Completed    |
+| 1029     | 6           | 2024-05-03 | Completed    |
+| 1027     | 2           | 2024-04-25 | Completed    |
+| 1024     | 7           | 2024-04-12 | Completed    |
+| 1022     | 17          | 2024-04-03 | Completed    |
+| 1021     | 1           | 2024-03-28 | Completed    |
+| 1020     | 4           | 2024-03-22 | Completed    |
+| 1015     | 3           | 2024-03-02 | Completed    |
+| 1012     | 10          | 2024-02-18 | Completed    |
+| 1008     | 7           | 2024-02-02 | Completed    |
+| 1006     | 1           | 2024-01-25 | Completed    |
+| 1002     | 2           | 2024-01-08 | Completed    |
+| 1001     | 1           | 2024-01-05 | Completed    |
+
+> [!TIP]
+> **Business Insight:** Isolating orders with electronic purchases helps operations plan fragile shipment packaging
+and offers customer service the opportunity to cross-sell electronics warranties.
+
+---
+
+### Query 6.1: Customer Segmentation by Spending (High / Medium / Low Value)
+**Concepts:** `CASE Statement, Aggregate SUM, GROUP BY, ORDER BY`  
+**Business Question:** *How are our customers segmented based on lifetime spending tiers?*  
+
+```sql
+SELECT 
+    c.customer_id,
+    c.first_name || ' ' || c.last_name AS customer_name,
+    c.city,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS total_spending,
+    CASE 
+        WHEN SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) >= 1000 THEN 'High Value'
+        WHEN SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) >= 400 THEN 'Medium Value'
+        ELSE 'Low Value'
+    END AS customer_segment
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY c.customer_id, customer_name, c.city
+ORDER BY total_spending DESC;
+```
+
+**Query Result:**
+
+| customer_id | customer_name   | city          | total_spending | customer_segment |
+|-------------|-----------------|---------------|----------------|------------------|
+| 10          | Julia Roberts   | San Francisco | 2947.5         | High Value       |
+| 2           | Bob Jones       | Los Angeles   | 2169.75        | High Value       |
+| 1           | Alice Smith     | New York      | 2114.75        | High Value       |
+| 7           | George Clark    | Austin        | 1645.0         | High Value       |
+| 4           | Diana Prince    | Houston       | 1449.0         | High Value       |
+| 3           | Charlie Brown   | Chicago       | 1055.0         | High Value       |
+| 16          | Pam Beesly      | Philadelphia  | 640.0          | Medium Value     |
+| 6           | Fiona Gallagher | Seattle       | 587.5          | Medium Value     |
+| 12          | Laura Croft     | San Diego     | 523.0          | Medium Value     |
+| 8           | Hannah Abbott   | Denver        | 410.5          | Medium Value     |
+| 14          | Nancy Drew      | Portland      | 386.0          | Low Value        |
+| 15          | Oscar Martinez  | Dallas        | 343.5          | Low Value        |
+| 23          | Wendy Darling   | Minneapolis   | 340.0          | Low Value        |
+| 9           | Ian Malcolm     | Boston        | 337.0          | Low Value        |
+| 19          | Sarah Connor    | Las Vegas     | 315.0          | Low Value        |
+| 18          | Ryan Howard     | Detroit       | 242.0          | Low Value        |
+| 13          | Michael Scott   | Scranton      | 223.0          | Low Value        |
+| 17          | Quinn Fabray    | Atlanta       | 215.0          | Low Value        |
+| 21          | Uma Thurman     | Nashville     | 199.0          | Low Value        |
+| 22          | Victor Stone    | Charlotte     | 150.0          | Low Value        |
+
+> [!TIP]
+> **Business Insight:** Segmenting customers allows CRM teams to tailor messaging:
+- High Value (>= $1000): Dedicated account reps, early access to new releases, zero shipping fees.
+- Medium Value ($400 - $999): Re-order reminders, threshold discounts ($50 off next $200).
+- Low Value (< $400): Broad discount flyers and seasonal sales campaigns.
+
+---
+
+### Query 6.2: Distribution of Customers across Value Segments
+**Concepts:** `CASE Statement inside Subquery / GROUP BY`  
+**Business Question:** *What percentage and count of our paying customer base falls into each value tier?*  
+
+```sql
+SELECT 
+    customer_segment,
+    COUNT(*) AS total_customers,
+    ROUND(SUM(total_spending), 2) AS segment_revenue,
+    ROUND(AVG(total_spending), 2) AS avg_segment_spending
+FROM (
+    SELECT 
+        c.customer_id,
+        SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS total_spending,
+        CASE 
+            WHEN SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) >= 1000 THEN 'High Value'
+            WHEN SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) >= 400 THEN 'Medium Value'
+            ELSE 'Low Value'
+        END AS customer_segment
+    FROM customers c
+    JOIN orders o ON c.customer_id = o.customer_id
+    JOIN order_items oi ON o.order_id = oi.order_id
+    WHERE o.order_status IN ('Completed', 'Shipped')
+    GROUP BY c.customer_id
+) sub
+GROUP BY customer_segment
+ORDER BY segment_revenue DESC;
+```
+
+**Query Result:**
+
+| customer_segment | total_customers | segment_revenue | avg_segment_spending |
+|------------------|-----------------|-----------------|----------------------|
+| High Value       | 6               | 11381.0         | 1896.83              |
+| Low Value        | 10              | 2750.5          | 275.05               |
+| Medium Value     | 4               | 2161.0          | 540.25               |
+
+> [!TIP]
+> **Business Insight:** Validates the Pareto principle (80/20 rule): High-value customers drive the overwhelming majority
+of total revenue despite making up a smaller fraction of the customer count.
+
+---
+
+### Query 6.3: Order Fulfillment Status Summary (Pivoted / Aggregated with CASE)
+**Concepts:** `SUM with conditional CASE WHEN`  
+**Business Question:** *What is the distribution and monetary value of orders across each lifecycle status?*  
+
+```sql
+SELECT 
+    COUNT(*) AS total_all_orders,
+    SUM(CASE WHEN order_status = 'Completed' THEN 1 ELSE 0 END) AS completed_orders,
+    SUM(CASE WHEN order_status = 'Shipped' THEN 1 ELSE 0 END) AS shipped_orders,
+    SUM(CASE WHEN order_status = 'Pending' THEN 1 ELSE 0 END) AS pending_orders,
+    SUM(CASE WHEN order_status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_orders,
+    ROUND(100.0 * SUM(CASE WHEN order_status = 'Cancelled' THEN 1 ELSE 0 END) / COUNT(*), 2) AS cancellation_rate_percentage
+FROM orders;
+```
+
+**Query Result:**
+
+| total_all_orders | completed_orders | shipped_orders | pending_orders | cancelled_orders | cancellation_rate_percentage |
+|------------------|------------------|----------------|----------------|------------------|------------------------------|
+| 40               | 32               | 3              | 2              | 3                | 7.5                          |
+
+> [!TIP]
+> **Business Insight:** A cancellation rate under 10% indicates healthy fulfillment operations.
+Monitoring cancelled orders identifies potential inventory or payment gateway friction early.
+
+---
+
+### Query 7.1: Repeat Purchase Rate (Customers with Multiple Orders)
+**Concepts:** `HAVING COUNT, Subquery calculation`  
+**Business Question:** *What proportion of our customers are repeat buyers?*  
+
+```sql
+SELECT 
+    COUNT(DISTINCT customer_id) AS total_ordering_customers,
+    SUM(CASE WHEN order_count > 1 THEN 1 ELSE 0 END) AS repeat_customers,
+    ROUND(100.0 * SUM(CASE WHEN order_count > 1 THEN 1 ELSE 0 END) / COUNT(DISTINCT customer_id), 2) AS repeat_customer_rate_percentage
+FROM (
+    SELECT 
+        customer_id,
+        COUNT(order_id) AS order_count
+    FROM orders
+    WHERE order_status IN ('Completed', 'Shipped')
+    GROUP BY customer_id
+) order_counts;
+```
+
+**Query Result:**
+
+| total_ordering_customers | repeat_customers | repeat_customer_rate_percentage |
+|--------------------------|------------------|---------------------------------|
+| 20                       | 11               | 55.0                            |
+
+> [!TIP]
+> **Business Insight:** Repeat purchase rate measures customer satisfaction and customer lifetime value (LTV).
+A high repeat rate significantly reduces the customer acquisition cost (CAC) burden.
+
+---
+
+### Query 7.2: Category Profit Margin Comparison
+**Concepts:** `SUM, ROUND, Arithmetic Margins, GROUP BY`  
+**Business Question:** *Which category is most profitable on a percentage margin basis?*  
+
+```sql
+SELECT 
+    p.category,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS gross_revenue,
+    ROUND(SUM(oi.quantity * p.cost_price), 2) AS cost_of_goods_sold,
+    ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) - SUM(oi.quantity * p.cost_price), 2) AS gross_profit,
+    ROUND(
+        100.0 * (SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) - SUM(oi.quantity * p.cost_price)) 
+        / SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 
+        2
+    ) AS profit_margin_percentage
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN orders o ON oi.order_id = o.order_id
+WHERE o.order_status IN ('Completed', 'Shipped')
+GROUP BY p.category
+ORDER BY profit_margin_percentage DESC;
+```
+
+**Query Result:**
+
+| category       | gross_revenue | cost_of_goods_sold | gross_profit | profit_margin_percentage |
+|----------------|---------------|--------------------|--------------|--------------------------|
+| Books          | 465.0         | 188.0              | 277.0        | 59.57                    |
+| Clothing       | 1497.5        | 745.0              | 752.5        | 50.25                    |
+| Fitness        | 1635.5        | 998.0              | 637.5        | 38.98                    |
+| Home & Kitchen | 1979.5        | 1220.0             | 759.5        | 38.37                    |
+| Electronics    | 10715.0       | 7640.0             | 3075.0       | 28.7                     |
+
+> [!TIP]
+> **Business Insight:** While Electronics produces the highest total revenue, Books and Clothing often yield higher
+percentage profit margins. Prioritizing mixed basket sales balances both volume and margin health.
+
+---
